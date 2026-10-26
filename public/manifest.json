@@ -1,0 +1,35 @@
+{
+  "name": "WilShine Cleaning Services",
+  "short_name": "WilShine",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#ffffff",
+  "description": "Wilshine Cleaning Services is a leading provider of professional cleaning services, offering a wide range of solutions for residential and commercial spaces. Our team of experienced cleaners is dedicated to delivering exceptional results, ensuring your space is spotless and inviting. With a commitment to quality and customer satisfaction, we tailor our services to meet your specific needs, using eco-friendly products and advanced techniques. Experience the difference with Wilshine Cleaning Services, where cleanliness meets excellence."
+}

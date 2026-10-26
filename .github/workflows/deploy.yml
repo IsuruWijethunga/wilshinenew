@@ -1,0 +1,88 @@
+name: Deploy Next.js App (Server-rendered) to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js app
+        run: npm run build
+
+      - name: Archive server app (dist + config + package files)
+        run: |
+          # next.config.mjs is needed at runtime: it sets distDir to "dist".
+          # dist/cache is only a build cache (hundreds of MB), so leave it out.
+          tar -czf server-app.tar.gz --exclude=dist/cache \
+            dist public next.config.mjs package.json package-lock.json
+
+      - name: Upload to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "server-app.tar.gz"
+          target: "~/next-deploy"
+
+      - name: SSH into EC2 and deploy app
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            # Stop at the first failing command so the pipeline goes red instead of hiding it
+            set -e
+            # Find pm2 before switching Node, because "nvm use 20" can drop it from PATH
+            PM2="$(command -v pm2)"
+            echo "Using pm2 at: $PM2"
+            nvm install 20
+            nvm use 20
+            # Absolute path to Node 20 so only this app uses it (other PM2 apps keep their own Node)
+            NODE20="$(nvm which 20)"
+            cd ~/next-deploy
+            # Remove the previous build so old files can't mix with the new one
+            rm -rf dist .next next.config.mjs
+            tar -xzf server-app.tar.gz
+            # ci respects package-lock.json exactly (same Next version as the build)
+            npm ci --omit=dev
+            "$PM2" delete next-app || true
+            # Run next directly with the Node 20 interpreter instead of "pm2 start npm",
+            # which would use the PM2 daemon's Node (18).
+            # Stop retrying after 3 failed restarts. A crash within 10s of starting
+            # counts as a failed restart (PM2 only counts "unstable" restarts).
+            "$PM2" start node_modules/next/dist/bin/next --name next-app \
+              --cwd "$HOME/next-deploy" --interpreter "$NODE20" \
+              --max-restarts 3 --min-uptime 10000 --restart-delay 3000 \
+              -- start -p 4001
+            "$PM2" save
+            # Health check: wait for the app, and if it doesn't answer, print its logs and fail
+            for i in $(seq 1 15); do
+              if curl -sf -o /dev/null http://localhost:4001; then
+                echo "App is up on port 4001"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "App did not respond on port 4001. PM2 status and logs:"
+            "$PM2" status
+            "$PM2" logs next-app --lines 80 --nostream
+            exit 1

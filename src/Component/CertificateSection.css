@@ -1,0 +1,17 @@
+.brand-box-layout2 .item-img {
+    height: 150px; /* or any consistent height you prefer */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: #fff; /* optional: ensures uniform background */
+    padding: 10px; /* optional: gives some spacing around images */
+    border-radius: 8px; /* optional: makes it look cleaner */
+  }
+  
+  .brand-box-layout2 .item-img img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  
