@@ -1,9 +1,9 @@
 name: Deploy Next.js App (Server-rendered) to EC2
 
+# EC2 is retired - the site deploys on Vercel now.
+# Kept for manual runs only; no longer fires on push.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -24,12 +24,12 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
-      - name: Archive server app (dist + config + package files)
+      - name: Archive server app (.next + config + package files)
         run: |
-          # next.config.mjs is needed at runtime: it sets distDir to "dist".
-          # dist/cache is only a build cache (hundreds of MB), so leave it out.
-          tar -czf server-app.tar.gz --exclude=dist/cache \
-            dist public next.config.mjs package.json package-lock.json
+          # next.config.mjs is needed at runtime for the image/routing settings.
+          # .next/cache is only a build cache (hundreds of MB), so leave it out.
+          tar -czf server-app.tar.gz --exclude=.next/cache \
+            .next public next.config.mjs package.json package-lock.json
 
       - name: Upload to EC2
         uses: appleboy/scp-action@v0.1.4
@@ -60,7 +60,7 @@ jobs:
             NODE20="$(nvm which 20)"
             cd ~/next-deploy
             # Remove the previous build so old files can't mix with the new one
-            rm -rf dist .next next.config.mjs
+            rm -rf .next next.config.mjs
             tar -xzf server-app.tar.gz
             # ci respects package-lock.json exactly (same Next version as the build)
             npm ci --omit=dev

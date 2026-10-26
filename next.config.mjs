@@ -8,7 +8,6 @@ const nextConfig = {
   },
   assetPrefix: isProd ? "" : "",
   basePath: isProd ? "" : "",
-  distDir: "dist",
   // Ensure trailing slash is disabled for consistency with static exports
   trailingSlash: false,
 };
